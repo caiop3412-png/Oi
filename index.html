@@ -631,32 +631,65 @@ async function enviar(){
   document.getElementById('btn-send').disabled=true;
   carregando=true;addTyping();
 
-  var partes=[];
-  if(texto) partes.push(texto);
-  anx.forEach(function(a){
-    if(a.type==='image'){
-      partes.push(texto?'[Imagem enviada junto com a mensagem acima]':'O que tem nessa imagem? Descreva detalhadamente.');
-    } else {
+  // Monta mensagem do usuário (com suporte a imagem via vision)
+  var temImagem = anx.some(function(a){ return a.type==='image'; });
+  var userContent;
+
+  if(temImagem){
+    // Formato multimodal para o modelo vision
+    userContent = [];
+    if(texto) userContent.push({type:'text', text: texto});
+    anx.forEach(function(a){
+      if(a.type==='image'){
+        var b64 = a.data.indexOf(',') > -1 ? a.data.split(',')[1] : a.data;
+        var mime = a.mimeType || 'image/jpeg';
+        userContent.push({type:'image_url', image_url:{url:'data:'+mime+';base64,'+b64}});
+        if(!texto) userContent.push({type:'text', text:'O que tem nessa imagem? Descreva detalhadamente.'});
+      } else {
+        var conteudo = typeof a.data==='string' ? a.data : '';
+        userContent.push({type:'text', text:'[Arquivo: '+a.name+']\n\n'+conteudo.slice(0,3000)});
+      }
+    });
+  } else {
+    var partes=[];
+    if(texto) partes.push(texto);
+    anx.forEach(function(a){
       var conteudo=typeof a.data==='string'?a.data:'';
       partes.push('[Arquivo: '+a.name+']\n\n'+conteudo.slice(0,3000));
-    }
-  });
+    });
+    userContent = partes.join('\n\n')||texto;
+  }
 
-  var userText=partes.join('\n\n')||texto;
-  historico.push({role:'user',content:userText});
+  historico.push({role:'user', content: userContent});
   if(historico.length>6) historico=historico.slice(-6);
+
+  // Converte histórico: só a última mensagem pode ser multimodal, o resto vira string
+  var historicoAPI = historico.map(function(m, i){
+    if(Array.isArray(m.content)){
+      if(i === historico.length - 1) return m; // última mensagem: mantém multimodal
+      // mensagens antigas com imagem: converte pra string
+      var txt = m.content.map(function(c){
+        if(c.type === 'text') return c.text;
+        if(c.type === 'image_url') return '[imagem]';
+        return '';
+      }).join(' ');
+      return {role: m.role, content: txt};
+    }
+    return m;
+  });
 
   try{
     var GROQ_KEY='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';
+    var modeloUsar = temImagem ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'llama-3.3-70b-versatile';
     var res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
       body:JSON.stringify({
-        model:'llama-3.1-8b-instant',
+        model: modeloUsar,
         max_tokens:1000,
         messages:[
           {role:'system',content:'Você é um assistente inteligente e direto. Responde em português brasileiro. Quando gerar código, use blocos de código com ```. Seja útil, claro e objetivo.'},
-          ...historico
+          ...historicoAPI
         ]
       })
     });
