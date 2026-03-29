@@ -63,6 +63,13 @@ body::after{content:'';position:fixed;width:600px;height:600px;background:radial
 .btn-copy:hover{color:var(--cyan);border-color:#00f5ff44;}
 .btn-regen{background:#001a0d;color:#4ade80;border:1px solid #16a34a44;}
 .btn-tts{background:#1a001a;color:#c084fc;border:1px solid #7b2fff44;}
+.ia-file{display:flex;align-items:center;gap:12px;background:#0c0c1a;border:1px solid #00f5ff22;border-radius:12px;padding:12px 16px;margin-top:8px;cursor:pointer;transition:all .2s;}
+.ia-file:hover{border-color:#00f5ff55;background:#0f0f20;}
+.ia-file-icon{font-size:28px;flex-shrink:0;}
+.ia-file-info{flex:1;min-width:0;}
+.ia-file-name{font-size:13px;font-weight:700;color:#00f5ff;margin-bottom:2px;}
+.ia-file-size{font-size:11px;color:var(--muted);}
+.ia-file-btn{background:linear-gradient(135deg,#00f5ff22,#7b2fff22);border:1px solid #00f5ff33;border-radius:8px;padding:6px 12px;color:#00f5ff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .btn-dl-js{background:#001a00;color:#4ade80;border:1px solid #16a34a44;}
 .btn-dl-txt{background:#001a2e;color:var(--cyan);border:1px solid #00f5ff33;}
 .typing-indicator{display:flex;gap:5px;align-items:center;padding:12px 14px;}
@@ -515,16 +522,39 @@ function addMsgUI(role,content,anx,id,save){
   });
   html+='<div class="msg-bubble">'+escHtml(content)+'</div>';
   if(role==='ai'){
+    // Detectar blocos de código e criar arquivos
+    var blocos=content.match(/```(\w+)?\n?([\s\S]+?)```/g)||[];
+    blocos.forEach(function(bloco,bi){
+      var m=bloco.match(/```(\w+)?\n?([\s\S]+?)```/);
+      if(!m)return;
+      var lang=m[1]||'txt';
+      var code=m[2].trim();
+      var ext=({js:'js',javascript:'js',html:'html',css:'css',python:'py',py:'py',json:'json',ts:'ts'})[lang]||'txt';
+      var icon=({js:'📜',html:'🌐',css:'🎨',py:'🐍',json:'📊',ts:'📘'})[ext]||'📄';
+      var nome='arquivo-'+(bi+1)+'.'+ext;
+      var size=(code.length/1024).toFixed(1)+'KB';
+      var b64=btoa(unescape(encodeURIComponent(code)));
+      html+='<div class="ia-file" data-b64="'+b64+'" data-nome="'+nome+'">'+
+        '<div class="ia-file-icon">'+icon+'</div>'+
+        '<div class="ia-file-info">'+
+        '<div class="ia-file-name">'+nome+'</div>'+
+        '<div class="ia-file-size">'+size+' · Toque para baixar</div>'+
+        '</div>'+
+        '<button class="ia-file-btn">⬇️ Baixar</button>'+
+        '</div>';
+    });
     html+='<div class="msg-actions">';
     html+='<button class="action-btn btn-copy" onclick="copiar(this)">📋 Copiar</button>';
     html+='<button class="action-btn btn-tts" onclick="falarTextoManual(this.closest(\'.msg-content\').querySelector(\'.msg-bubble\').innerText)">🔊 Ouvir</button>';
     html+='<button class="action-btn btn-regen" onclick="regenerar(\''+mid+'\')">🔄 Refazer</button>';
-    if(/function|const |var |let /.test(content))html+='<button class="action-btn btn-dl-js" onclick="baixar(this,\'.js\')">⬇️ .js</button>';
-    html+='<button class="action-btn btn-dl-txt" onclick="baixar(this,\'.txt\')">⬇️ .txt</button>';
     html+='</div>';
   }
   html+='</div>';
   div.innerHTML=html;chat.appendChild(div);chat.scrollTop=chat.scrollHeight;
+  // Adicionar eventos nos arquivos da IA
+  div.querySelectorAll('.ia-file').forEach(function(el){
+    el.addEventListener('click',function(){baixarCodigo(this.dataset.b64,this.dataset.nome);});
+  });
   if(save!==false&&conversaAtual&&conversas[conversaAtual]){
     var c=conversas[conversaAtual];
     if(!c.mensagens)c.mensagens=[];
@@ -545,9 +575,37 @@ function copiar(btn){
 function baixar(btn,ext){
   var b=btn.closest('.msg-content').querySelector('.msg-bubble');
   var t=b.innerText,m=t.match(/```(?:\w+)?\n?([\s\S]+?)```/);if(m)t=m[1];
-  var blob=new Blob([t],{type:'text/plain'}),url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;a.download='resposta-ia'+ext;a.click();URL.revokeObjectURL(url);
+  try{
+    // Tenta blob primeiro
+    var blob=new Blob([t],{type:'text/plain'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download='resposta-ia'+ext;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  }catch(e){
+    // Fallback: data URL (funciona no app)
+    var encoded=encodeURIComponent(t);
+    var a=document.createElement('a');
+    a.href='data:text/plain;charset=utf-8,'+encoded;
+    a.download='resposta-ia'+ext;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
   btn.textContent='✅ Baixado!';setTimeout(function(){btn.textContent='⬇️ '+ext;},2000);
+}
+
+function baixarCodigo(b64,nome){
+  try{
+    var t=decodeURIComponent(escape(atob(b64)));
+    var blob=new Blob([t],{type:'text/plain'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download=nome;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  }catch(e){
+    var a=document.createElement('a');
+    a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(decodeURIComponent(escape(atob(b64))));
+    a.download=nome;document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
 }
 
 async function buscarResposta(temImg){
