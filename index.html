@@ -414,27 +414,55 @@ function pararAudio(){
   var b=document.getElementById('btn-stop-audio');if(b)b.style.display='none';
 }
 
-async function falarTextoManual(txt){
+function falarTextoManual(txt){
   if(!txt)return;
   pararAudio();
+  if(!window.speechSynthesis)return;
   var b=document.getElementById('btn-stop-audio');if(b)b.style.display='flex';
-  try{
-    var texto=txt.slice(0,500).replace(/[`*#]/g,'');
-    var urlAlt='https://translate.google.com/translate_tts?ie=UTF-8&tl=pt-BR&client=tw-ob&q='+encodeURIComponent(texto.slice(0,200));
-    var audio=new Audio(urlAlt);
-    audio.crossOrigin='anonymous';
-    window._audioAtual=audio;
-    audio.onended=function(){if(b)b.style.display='none';window._audioAtual=null;};
-    audio.onerror=function(){
-      if(b)b.style.display='none';
-      window._audioAtual=null;
-      var u=new SpeechSynthesisUtterance(txt.slice(0,800));
-      u.lang='pt-BR';u.rate=1.0;u.pitch=1.0;
-      u.onend=function(){if(b)b.style.display='none';};
-      window.speechSynthesis&&window.speechSynthesis.speak(u);
+  var texto=txt.replace(/[`*#_]/g,'').trim();
+  window.speechSynthesis.cancel();
+
+  function iniciarFala(){
+    // Divide sem repetir palavras na junção
+    var partes=[];
+    var frases=texto.split(/(?<=[.!?])\s+/);
+    var atual='';
+    frases.forEach(function(f){
+      if((atual+' '+f).length>200){
+        if(atual)partes.push(atual.trim());
+        atual=f;
+      } else {
+        atual=atual?atual+' '+f:f;
+      }
+    });
+    if(atual)partes.push(atual.trim());
+    if(!partes.length)partes=[texto];
+    var idx=0;
+    function falarParte(){
+      if(idx>=partes.length){if(b)b.style.display='none';return;}
+      var u=new SpeechSynthesisUtterance(partes[idx++]);
+      u.lang='pt-BR';u.rate=0.95;u.pitch=1.0;u.volume=1.0;
+      var vozes=window.speechSynthesis.getVoices();
+      var vozPT=vozes.find(function(v){return v.lang==='pt-BR';})
+             ||vozes.find(function(v){return v.lang.startsWith('pt');});
+      if(vozPT)u.voice=vozPT;
+      u.onend=falarParte;
+      u.onerror=function(){if(b)b.style.display='none';};
+      window.speechSynthesis.speak(u);
+    }
+    falarParte();
+  }
+
+  var vozes=window.speechSynthesis.getVoices();
+  if(vozes.length>0){
+    iniciarFala();
+  } else {
+    window.speechSynthesis.onvoiceschanged=function(){
+      window.speechSynthesis.onvoiceschanged=null;
+      iniciarFala();
     };
-    audio.play().catch(function(){if(b)b.style.display='none';window._audioAtual=null;});
-  }catch(e){if(b)b.style.display='none';}
+    setTimeout(iniciarFala,500);
+  }
 }
 
 function salvarConversas(){try{localStorage.setItem('chatia_convs',JSON.stringify(conversas));}catch(e){}}
