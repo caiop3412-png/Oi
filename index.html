@@ -365,8 +365,9 @@ function renderHomeList(){
 }
 
 function pedirNovaConversa(){
-  var nome=prompt('Nome da conversa (opcional):');
+  var nome=prompt('Nome da conversa:');
   if(nome===null)return; // cancelou
+  if(!nome.trim()){alert('Digite um nome para a conversa!');return;}
   salvarConversaAtual();
   var id='c'+Date.now();
   conversas[id]={titulo:nome.trim()||'Nova conversa',mensagens:[],ts:Date.now()};
@@ -500,7 +501,7 @@ function addMsgUI(role,content,anx,id,save){
     var c=conversas[conversaAtual];
     if(!c.mensagens)c.mensagens=[];
     c.mensagens.push({role:role,texto:content,id:mid});
-    if(c.mensagens.length===1&&role==='user')c.titulo=content.slice(0,35)||'Conversa';
+    if(c.mensagens.length===1&&role==='user'&&(!c.titulo||c.titulo==='Nova conversa'))c.titulo=content.slice(0,35)||'Conversa';
     c.ts=Date.now();salvarConversas();
   }
   return mid;
@@ -573,7 +574,7 @@ async function enviar(){
   if(!texto&&!anexos.length)return;
   if(!conversaAtual){
     var id='c'+Date.now();
-    conversas[id]={titulo:texto.slice(0,35)||'Conversa',mensagens:[],ts:Date.now()};
+    conversas[id]={titulo:'Nova conversa',mensagens:[],ts:Date.now()};
     conversaAtual=id;salvarConversas();
     document.getElementById('chat-titulo').textContent=conversas[id].titulo;
   }
