@@ -741,15 +741,20 @@ renderHomeList();
 
     window.loginGoogle = function() {
       var btn = document.getElementById('btn-google-login');
-      btn.textContent = 'Entrando...';
+      btn.textContent = 'Redirecionando...';
       btn.disabled = true;
-      auth.signInWithPopup(provider).catch(function(err) {
+      auth.signInWithRedirect(provider).catch(function(err) {
         console.error(err);
         document.getElementById('login-erro').style.display = 'block';
         btn.innerHTML = '<img src="https://www.google.com/favicon.ico" width="20" height="20"> Entrar com Google';
         btn.disabled = false;
       });
     };
+
+    // Pega resultado do redirect ao voltar
+    auth.getRedirectResult().catch(function(err) {
+      console.error(err);
+    });
 
     auth.onAuthStateChanged(function(user) {
       var ls = document.getElementById('login-screen');
