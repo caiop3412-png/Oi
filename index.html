@@ -197,7 +197,7 @@ input[type=file]{display:none;}
 
   <!-- STEP 1: Email -->
   <div id="step-email" style="width:100%;max-width:300px;">
-    <input id="input-email" type="tel" placeholder="Seu número do WhatsApp (ex: 5511999999999)" style="width:100%;background:#0c0c1a;border:1px solid #1a1a3a;border-radius:10px;padding:13px 14px;color:#e8e8ff;font-size:14px;font-family:'Syne',sans-serif;outline:none;margin-bottom:10px;">
+    <input id="input-email" type="email" placeholder="Seu email" style="width:100%;background:#0c0c1a;border:1px solid #1a1a3a;border-radius:10px;padding:13px 14px;color:#e8e8ff;font-size:14px;font-family:'Syne',sans-serif;outline:none;margin-bottom:10px;">
     <button onclick="enviarCodigo()" style="width:100%;background:linear-gradient(135deg,#00f5ff,#7b2fff);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;">Enviar código</button>
   </div>
 
@@ -739,7 +739,7 @@ function mostrarOk(msg){ var e=document.getElementById('login-ok'); e.textConten
 
 function enviarCodigo(){
   var email=document.getElementById('input-email').value.trim();
-  if(!email||email.replace(/\D/g,'').length<10){ mostrarErro('Digite um número válido com DDD!'); return; }
+  if(!email||!email.includes('@')){ mostrarErro('Digite um email válido!'); return; }
   _emailAtual=email;
   _codigoGerado=String(Math.floor(100000+Math.random()*900000));
   // Salva no localStorage temporariamente
@@ -749,30 +749,27 @@ function enviarCodigo(){
 }
 
 function enviarEmailCodigo(email, codigo){
-  // Usa API do EmailJS para enviar o código
-  var serviceId='service_chatia';
-  var templateId='template_chatia';
-  var userId='user_chatia';
-  fetch('https://api.emailjs.com/api/v1.0/email/send',{
+  var painelUrl='https://barrier-gba-surgeon-ltd.trycloudflare.com';
+  var btn=document.querySelector('#step-email button');
+  if(btn){btn.textContent='Enviando...';btn.disabled=true;}
+  fetch(painelUrl+'/api',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      service_id:serviceId,
-      template_id:templateId,
-      user_id:userId,
-      template_params:{to_email:email,codigo:codigo}
-    })
-  }).then(function(){
-    document.getElementById('email-show').textContent=email;
-    document.getElementById('step-email').style.display='none';
-    document.getElementById('step-codigo').style.display='block';
-    mostrarOk('Código enviado! Verifique seu email.');
+    headers:{'Content-Type':'application/json','x-token':'saturo2026'},
+    body:JSON.stringify({ep:'sendcode',email:email,code:codigo})
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    if(btn){btn.textContent='Enviar código';btn.disabled=false;}
+    if(d.ok){
+      document.getElementById('email-show').textContent=email;
+      document.getElementById('step-email').style.display='none';
+      document.getElementById('step-codigo').style.display='block';
+      mostrarOk('Código enviado! Verifique seu email.');
+    } else {
+      mostrarErro('Erro: '+(d.error||'Tente novamente'));
+    }
   }).catch(function(){
-    // Se EmailJS não configurado, mostra código direto (modo dev)
-    document.getElementById('email-show').textContent=email;
-    document.getElementById('step-email').style.display='none';
-    document.getElementById('step-codigo').style.display='block';
-    mostrarOk('Modo dev: código é '+codigo);
+    if(btn){btn.textContent='Enviar código';btn.disabled=false;}
+    mostrarErro('Erro ao conectar com o bot. Verifique se está online.');
   });
 }
 
