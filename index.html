@@ -5,55 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat IA</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script type="module">
-// ── FIREBASE ──
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCkc-5PPhRL1I28sokcSHD1_GJOtCijhAE",
-  authDomain: "project-f411f0db-f659-4f9d-894.firebaseapp.com",
-  projectId: "project-f411f0db-f659-4f9d-894",
-  storageBucket: "project-f411f0db-f659-4f9d-894.firebasestorage.app",
-  messagingSenderId: "160418821047",
-  appId: "1:160418821047:web:82edd1a3fae200f3f96e32"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
-
-// Expõe globalmente
-window._fbAuth = auth;
-window._fbDb = db;
-window._fbProvider = provider;
-window._fbSignInWithPopup = signInWithPopup;
-window._fbSignInWithRedirect = signInWithRedirect;
-window._fbGetRedirectResult = getRedirectResult;
-window._fbOnAuthStateChanged = onAuthStateChanged;
-window._fbSignOut = signOut;
-window._fbDoc = doc;
-window._fbSetDoc = setDoc;
-window._fbGetDoc = getDoc;
-window._fbCollection = collection;
-window._fbQuery = query;
-window._fbOrderBy = orderBy;
-window._fbGetDocs = getDocs;
-window._fbDeleteDoc = deleteDoc;
-window._fbReady = true;
-
-// Escuta mudança de auth
-onAuthStateChanged(auth, function(user){
-  window._fbUser = user;
-  if(user){
-    window._fbOnLogin && window._fbOnLogin(user);
-  } else {
-    window._fbOnLogout && window._fbOnLogout();
-  }
-});
-</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#04040a;--surface:#080812;--card:#0c0c1a;--border:#1a1a3a;--cyan:#00f5ff;--pink:#ff2d78;--purple:#7b2fff;--text:#e8e8ff;--muted:#4a4a6a;--glow-cyan:0 0 20px #00f5ff44;}
@@ -233,39 +184,35 @@ input[type=file]{display:none;}
 /* chat header com seta voltar */
 .chat-header-back{width:34px;height:34px;border:1px solid var(--border);border-radius:10px;background:#0c0c1a;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px;flex-shrink:0;}
 .chat-header-back:hover{border-color:#00f5ff44;color:var(--cyan);}
-
-/* ── LOGIN SCREEN ── */
-#login-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;}
-#login-screen.hide{display:none;}
-.login-card{background:#080812;border:1px solid var(--border);border-radius:24px;padding:32px 24px;width:100%;max-width:340px;text-align:center;}
-.login-logo{font-size:52px;margin-bottom:16px;filter:drop-shadow(0 0 20px #7b2fff);}
-.login-title{font-size:22px;font-weight:800;background:linear-gradient(90deg,#00f5ff,#7b2fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;}
-.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.6;}
-.btn-google{width:100%;padding:14px;border:1px solid var(--border);border-radius:14px;background:#0c0c1a;color:var(--text);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:'Syne',sans-serif;transition:all .2s;}
-.btn-google:hover{border-color:#00f5ff44;background:#0f0f22;}
-.btn-google img{width:20px;height:20px;}
-.login-loading{font-size:12px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:16px;min-height:18px;}
-/* user avatar no header */
-.user-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid #00f5ff44;}
-.user-avatar-placeholder{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#00f5ff,#7b2fff);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;}
 </style>
 </head>
 <body>
 <div class="scanline"></div>
-
-<!-- ── LOGIN SCREEN ── -->
-<div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">🤖</div>
-    <div class="login-title">Chat IA</div>
-    <div class="login-sub">Entre com sua conta Google para salvar suas conversas em qualquer dispositivo.</div>
-    <button class="btn-google" onclick="fazerLogin()">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-      Entrar com Google
-    </button>
-    <div class="login-loading" id="login-status"></div>
+<div id="login-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;padding:24px;position:fixed;inset:0;z-index:9999;background:var(--bg);">
+  <div style="text-align:center;margin-bottom:32px;">
+    <div style="font-size:52px;margin-bottom:16px;filter:drop-shadow(0 0 20px #00f5ff44);">⬡</div>
+    <h1 style="font-size:24px;font-weight:800;letter-spacing:2px;text-transform:uppercase;background:linear-gradient(90deg,#00f5ff,#7b2fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CHAT IA</h1>
+    <p style="font-size:13px;color:var(--muted);margin-top:8px;">Assistente inteligente</p>
   </div>
+
+  <!-- STEP 1: Email -->
+  <div id="step-email" style="width:100%;max-width:300px;">
+    <input id="input-email" type="tel" placeholder="Seu número do WhatsApp (ex: 5511999999999)" style="width:100%;background:#0c0c1a;border:1px solid #1a1a3a;border-radius:10px;padding:13px 14px;color:#e8e8ff;font-size:14px;font-family:'Syne',sans-serif;outline:none;margin-bottom:10px;">
+    <button onclick="enviarCodigo()" style="width:100%;background:linear-gradient(135deg,#00f5ff,#7b2fff);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;">Enviar código</button>
+  </div>
+
+  <!-- STEP 2: Código -->
+  <div id="step-codigo" style="width:100%;max-width:300px;display:none;">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;text-align:center;">Código enviado para <span id="email-show" style="color:#00f5ff"></span></p>
+    <input id="input-codigo" type="number" placeholder="Código de 6 dígitos" style="width:100%;background:#0c0c1a;border:1px solid #1a1a3a;border-radius:10px;padding:13px 14px;color:#e8e8ff;font-size:18px;font-family:'Space Mono',monospace;outline:none;margin-bottom:10px;letter-spacing:4px;text-align:center;">
+    <button onclick="verificarCodigo()" style="width:100%;background:linear-gradient(135deg,#00f5ff,#7b2fff);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;">Entrar</button>
+    <button onclick="voltarEmail()" style="width:100%;background:none;border:none;color:var(--muted);font-size:12px;margin-top:10px;cursor:pointer;font-family:'Syne',sans-serif;">← Usar outro email</button>
+  </div>
+
+  <p id="login-erro" style="color:#ff2d78;font-size:12px;margin-top:14px;display:none;text-align:center;"></p>
+  <p id="login-ok" style="color:#00e676;font-size:12px;margin-top:14px;display:none;text-align:center;"></p>
 </div>
+
 
 <!-- ══════════════ HOME SCREEN ══════════════ -->
 <div id="home-screen">
@@ -273,7 +220,6 @@ input[type=file]{display:none;}
   <!-- Header Home -->
   <div class="home-header">
     <button class="home-menu-btn" onclick="toggleHomeMenu(event)" style="font-size:22px;color:var(--muted)">⋯</button>
-    <div id="user-avatar-wrap" style="margin-left:auto;cursor:pointer" onclick="confirmarLogout()"></div>
   </div>
   <div style="padding:4px 20px 12px;">
     <div class="home-title">Conversas</div>
@@ -780,108 +726,83 @@ async function enviar(){
   carregando=false;document.getElementById('btn-send').disabled=false;input.focus();
 }
 
-// ── FIREBASE AUTH LOGIC ──
-window._fbOnLogin = function(user){
-  window._fbUser = user;
-  document.getElementById('login-screen').classList.add('hide');
-  document.getElementById('home-screen').style.display = 'flex';
-  document.getElementById('login-status').textContent = '';
-  // Mostra avatar
-  var wrap = document.getElementById('user-avatar-wrap');
-  if(wrap){
-    if(user.photoURL){
-      wrap.innerHTML = '<img class="user-avatar" src="'+user.photoURL+'" alt="">';
-    } else {
-      var inicial = (user.displayName||user.email||'U')[0].toUpperCase();
-      wrap.innerHTML = '<div class="user-avatar-placeholder">'+inicial+'</div>';
-    }
-  }
-  carregarConversas();
-};
+carregarConversas();
+renderHomeList();
 
-window._fbOnLogout = function(){
-  window._fbUser = null;
-  document.getElementById('login-screen').classList.remove('hide');
-  document.getElementById('home-screen').style.display = 'none';
-  conversas = {};
-  renderHomeList();
-};
 
-function fazerLogin(){
-  if(!window._fbReady){ alert('Aguarde...'); return; }
-  var statusEl = document.getElementById('login-status');
-  statusEl.textContent = 'Entrando...';
-  window._fbSignInWithPopup(window._fbAuth, window._fbProvider).then(function(result){
-    window._fbOnLogin(result.user);
-  }).catch(function(e){
-    if(e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request'){
-      statusEl.textContent = '';
-    } else {
-      statusEl.textContent = 'Erro: ' + (e.message || 'Tente novamente');
-    }
+// ── AUTH COM EMAIL + CÓDIGO ──
+var _codigoGerado = null;
+var _emailAtual = null;
+
+function mostrarErro(msg){ var e=document.getElementById('login-erro'); e.textContent=msg; e.style.display='block'; document.getElementById('login-ok').style.display='none'; }
+function mostrarOk(msg){ var e=document.getElementById('login-ok'); e.textContent=msg; e.style.display='block'; document.getElementById('login-erro').style.display='none'; }
+
+function enviarCodigo(){
+  var email=document.getElementById('input-email').value.trim();
+  if(!email||email.replace(/\D/g,'').length<10){ mostrarErro('Digite um número válido com DDD!'); return; }
+  _emailAtual=email;
+  _codigoGerado=String(Math.floor(100000+Math.random()*900000));
+  // Salva no localStorage temporariamente
+  localStorage.setItem('_loginCode', JSON.stringify({code:_codigoGerado,email:email,ts:Date.now()}));
+  // Manda email via EmailJS (grátis)
+  enviarEmailCodigo(email, _codigoGerado);
+}
+
+function enviarEmailCodigo(email, codigo){
+  // Usa API do EmailJS para enviar o código
+  var serviceId='service_chatia';
+  var templateId='template_chatia';
+  var userId='user_chatia';
+  fetch('https://api.emailjs.com/api/v1.0/email/send',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      service_id:serviceId,
+      template_id:templateId,
+      user_id:userId,
+      template_params:{to_email:email,codigo:codigo}
+    })
+  }).then(function(){
+    document.getElementById('email-show').textContent=email;
+    document.getElementById('step-email').style.display='none';
+    document.getElementById('step-codigo').style.display='block';
+    mostrarOk('Código enviado! Verifique seu email.');
+  }).catch(function(){
+    // Se EmailJS não configurado, mostra código direto (modo dev)
+    document.getElementById('email-show').textContent=email;
+    document.getElementById('step-email').style.display='none';
+    document.getElementById('step-codigo').style.display='block';
+    mostrarOk('Modo dev: código é '+codigo);
   });
 }
 
-function confirmarLogout(){
-  if(!confirm('Sair da conta?')) return;
-  if(window._fbSignOut) window._fbSignOut(window._fbAuth);
+function verificarCodigo(){
+  var digitado=document.getElementById('input-codigo').value.trim();
+  var saved=JSON.parse(localStorage.getItem('_loginCode')||'{}');
+  if(!saved.code){ mostrarErro('Solicite um novo código.'); return; }
+  if(Date.now()-saved.ts>600000){ mostrarErro('Código expirado. Solicite um novo.'); return; }
+  if(digitado!==saved.code){ mostrarErro('Código incorreto!'); return; }
+  // Login aprovado!
+  localStorage.removeItem('_loginCode');
+  localStorage.setItem('_userEmail', saved.email);
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('home-screen').style.display='flex';
 }
 
-// ── FIREBASE FIRESTORE CONVERSAS ──
-async function carregarConversas(){
-  var user = window._fbUser;
-  if(!user || !window._fbDb){
-    // fallback localStorage
-    try{ var d=localStorage.getItem('chatia_convs');if(d)conversas=JSON.parse(d); }catch(e){conversas={};}
-    renderHomeList(); return;
-  }
-  try{
-    var q = window._fbQuery(
-      window._fbCollection(window._fbDb, 'users', user.uid, 'conversas'),
-      window._fbOrderBy('ts', 'desc')
-    );
-    var snap = await window._fbGetDocs(q);
-    conversas = {};
-    snap.forEach(function(d){ conversas[d.id] = d.data(); });
-    renderHomeList();
-  } catch(e){
-    console.log('Firebase load err:', e);
-    try{ var d=localStorage.getItem('chatia_convs');if(d)conversas=JSON.parse(d); }catch(e2){}
-    renderHomeList();
-  }
+function voltarEmail(){
+  document.getElementById('step-email').style.display='block';
+  document.getElementById('step-codigo').style.display='none';
+  document.getElementById('login-erro').style.display='none';
+  document.getElementById('login-ok').style.display='none';
 }
 
-function salvarConversas(){
-  var user = window._fbUser;
-  // Salva local sempre
-  try{ localStorage.setItem('chatia_convs', JSON.stringify(conversas)); }catch(e){}
-  // Salva no Firebase se logado
-  if(!user || !window._fbDb) return;
-  Object.keys(conversas).forEach(function(id){
-    var cv = conversas[id];
-    try{
-      window._fbSetDoc(
-        window._fbDoc(window._fbDb, 'users', user.uid, 'conversas', id),
-        cv
-      );
-    }catch(e){}
-  });
-}
-
-// Aguarda Firebase estar pronto
-var _waitFb = setInterval(function(){
-  if(window._fbReady){
-    clearInterval(_waitFb);
-    // onAuthStateChanged já lida com o login
-    // Se não tiver user após 2s, mostra login
-    setTimeout(function(){
-      if(!window._fbUser){
-        document.getElementById('login-screen').classList.remove('hide');
-      }
-    }, 2000);
+// Checa se já estava logado
+(function(){
+  if(localStorage.getItem('_userEmail')){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('home-screen').style.display='flex';
   }
-}, 100);
-
+})();
 </script>
 </body>
 </html>
