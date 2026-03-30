@@ -8,7 +8,7 @@
 <script type="module">
 // ── FIREBASE ──
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, getDocs, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -43,21 +43,6 @@ window._fbOrderBy = orderBy;
 window._fbGetDocs = getDocs;
 window._fbDeleteDoc = deleteDoc;
 window._fbReady = true;
-
-// Verifica redirect result e volta pra URL original do app
-getRedirectResult(auth).then(function(result){
-  if(result && result.user){
-    window._fbOnLogin && window._fbOnLogin(result.user);
-    // Voltar pra URL original se veio de redirect
-    try{
-      var from = sessionStorage.getItem('loginRedirectFrom');
-      if(from && from !== window.location.href){
-        sessionStorage.removeItem('loginRedirectFrom');
-        window.location.replace(from);
-      }
-    }catch(err){}
-  }
-}).catch(function(e){ console.log('redirect err:', e); });
 
 // Escuta mudança de auth
 onAuthStateChanged(auth, function(user){
@@ -826,20 +811,13 @@ function fazerLogin(){
   if(!window._fbReady){ alert('Aguarde...'); return; }
   var statusEl = document.getElementById('login-status');
   statusEl.textContent = 'Entrando...';
-  // Tenta popup primeiro (funciona no navegador normal)
   window._fbSignInWithPopup(window._fbAuth, window._fbProvider).then(function(result){
     window._fbOnLogin(result.user);
   }).catch(function(e){
-    // Se popup bloqueado ou fechado, usa redirect MAS salva flag pra voltar pro app
-    if(e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request'){
-      statusEl.textContent = 'Redirecionando...';
-      // Salva URL atual pra voltar depois do redirect
-      try{ sessionStorage.setItem('loginRedirectFrom', window.location.href); }catch(err){}
-      window._fbSignInWithRedirect(window._fbAuth, window._fbProvider);
-    } else if(e.code !== 'auth/popup-closed-by-user') {
-      statusEl.textContent = 'Erro: ' + e.message;
-    } else {
+    if(e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request'){
       statusEl.textContent = '';
+    } else {
+      statusEl.textContent = 'Erro: ' + (e.message || 'Tente novamente');
     }
   });
 }
