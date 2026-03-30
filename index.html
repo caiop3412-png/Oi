@@ -185,9 +185,23 @@ input[type=file]{display:none;}
 .chat-header-back{width:34px;height:34px;border:1px solid var(--border);border-radius:10px;background:#0c0c1a;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px;flex-shrink:0;}
 .chat-header-back:hover{border-color:#00f5ff44;color:var(--cyan);}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 <div class="scanline"></div>
+<div id="login-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;padding:24px;position:fixed;inset:0;z-index:9999;background:var(--bg);">
+  <div style="text-align:center;margin-bottom:40px;">
+    <div style="font-size:52px;margin-bottom:16px;filter:drop-shadow(0 0 20px #00f5ff44);">⬡</div>
+    <h1 style="font-size:24px;font-weight:800;letter-spacing:2px;text-transform:uppercase;background:linear-gradient(90deg,#00f5ff,#7b2fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">CHAT IA</h1>
+    <p style="font-size:13px;color:var(--muted);margin-top:8px;">Assistente inteligente</p>
+  </div>
+  <button id="btn-google-login" onclick="loginGoogle()" style="display:flex;align-items:center;gap:12px;background:#fff;color:#333;border:none;border-radius:12px;padding:14px 24px;font-size:15px;font-weight:600;cursor:pointer;width:100%;max-width:300px;justify-content:center;font-family:'Syne',sans-serif;box-shadow:0 4px 20px #00000044;">
+    <img src="https://www.google.com/favicon.ico" width="20" height="20"> Entrar com Google
+  </button>
+  <p id="login-erro" style="color:#ff2d78;font-size:12px;margin-top:16px;display:none;">Erro ao fazer login. Tente novamente.</p>
+</div>
+
 
 <!-- ══════════════ HOME SCREEN ══════════════ -->
 <div id="home-screen">
@@ -704,6 +718,56 @@ async function enviar(){
 carregarConversas();
 renderHomeList();
 
+
+// ── FIREBASE AUTH ──
+(function() {
+  var firebaseConfig = {
+    apiKey: "AIzaSyCkc-5PPhRL1I28sokcSHD1_GJOtCijhAE",
+    authDomain: "project-f411f0db-f659-4f9d-894.firebaseapp.com",
+    projectId: "project-f411f0db-f659-4f9d-894",
+    storageBucket: "project-f411f0db-f659-4f9d-894.firebasestorage.app",
+    messagingSenderId: "160418821047",
+    appId: "1:160418821047:web:82edd1a3fae200f3f96e32"
+  };
+
+  function initFirebase() {
+    if (typeof firebase === 'undefined') {
+      setTimeout(initFirebase, 100);
+      return;
+    }
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    var auth = firebase.auth();
+    var provider = new firebase.auth.GoogleAuthProvider();
+
+    window.loginGoogle = function() {
+      var btn = document.getElementById('btn-google-login');
+      btn.textContent = 'Entrando...';
+      btn.disabled = true;
+      auth.signInWithPopup(provider).catch(function(err) {
+        console.error(err);
+        document.getElementById('login-erro').style.display = 'block';
+        btn.innerHTML = '<img src="https://www.google.com/favicon.ico" width="20" height="20"> Entrar com Google';
+        btn.disabled = false;
+      });
+    };
+
+    auth.onAuthStateChanged(function(user) {
+      var ls = document.getElementById('login-screen');
+      var hs = document.getElementById('home-screen');
+      var cs = document.getElementById('chat-screen');
+      if (user) {
+        ls.style.display = 'none';
+        hs.style.display = 'flex';
+      } else {
+        ls.style.display = 'flex';
+        hs.style.display = 'none';
+        if(cs) cs.style.display = 'none';
+      }
+    });
+  }
+
+  initFirebase();
+})();
 </script>
 </body>
 </html>
