@@ -749,7 +749,8 @@ function enviarCodigo(){
 }
 
 function enviarEmailCodigo(email, codigo){
-  var painelUrl='https://barrier-gba-surgeon-ltd.trycloudflare.com';
+  // Usa o URL atual do painel dinamicamente
+  var painelUrl=window.location.origin;
   var btn=document.querySelector('#step-email button');
   if(btn){btn.textContent='Enviando...';btn.disabled=true;}
   fetch(painelUrl+'/api',{
