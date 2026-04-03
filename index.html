@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Célia — Sua Assistente</title>
+<script src="https://js.puter.com/v2/"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141416;
+    --surface2: #1c1c20;
+    --border: #2a2a30;
+    --accent: #c084fc;
+    --accent2: #818cf8;
+    --text: #f0f0f5;
+    --text-muted: #6b6b7a;
+    --user-bubble: #1e1b4b;
+    --ai-bubble: #18181f;
+    --glow: rgba(192,132,252,0.15);
+    --sidebar-w: 260px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100dvh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(192,132,252,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 50% at 10% 80%, rgba(129,140,248,0.05) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: relative; z-index: 5;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header { padding: 16px 14px 12px; border-bottom: 1px solid var(--border); }
+
+  .sidebar-brand { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .sidebar-brand .s-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .sidebar-brand span { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+
+  #btn-new-chat {
+    width: 100%; padding: 8px 12px;
+    background: rgba(192,132,252,0.1);
+    border: 1px solid rgba(192,132,252,0.25);
+    border-radius: 10px; color: var(--accent);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #btn-new-chat:hover { background: rgba(192,132,252,0.18); border-color: var(--accent); }
+
+  .sidebar-section-label {
+    padding: 10px 14px 4px;
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--text-muted);
+  }
+
+  #chat-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
+  #chat-list::-webkit-scrollbar { width: 3px; }
+  #chat-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .chat-item {
+    padding: 8px 10px; border-radius: 10px;
+    cursor: pointer; transition: background 0.15s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chat-item:hover { background: var(--surface2); }
+  .chat-item.active { background: rgba(192,132,252,0.1); }
+  .chat-item-icon { font-size: 14px; flex-shrink: 0; }
+  .chat-item-info { flex: 1; min-width: 0; }
+  .chat-item-title { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+  .chat-item.active .chat-item-title { color: var(--accent); }
+  .chat-item-meta { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+  .chat-item-del {
+    opacity: 0; background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 12px; padding: 3px 5px; border-radius: 4px;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .chat-item:hover .chat-item-del { opacity: 1; }
+  .chat-item-del:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+
+  .sidebar-footer { padding: 10px 14px; border-top: 1px solid var(--border); }
+
+  #btn-personality-side {
+    width: 100%; padding: 8px 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif; font-size: 12px;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #btn-personality-side:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MAIN */
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 1; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px;
+    background: rgba(13,13,15,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border); gap: 10px;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 10px; }
+
+  #btn-sidebar-toggle {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 18px; cursor: pointer; padding: 4px; border-radius: 6px;
+    transition: color 0.2s; display: none;
+  }
+  #btn-sidebar-toggle:hover { color: var(--text); }
+
+  .header-title {
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;
+  }
+
+  .personality-tag {
+    padding: 3px 10px;
+    background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.2);
+    border-radius: 20px; font-size: 11px; color: var(--accent); white-space: nowrap;
+  }
+
+  /* MESSAGES */
+  #messages {
+    flex: 1; overflow-y: auto;
+    padding: 20px 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    scroll-behavior: smooth;
+  }
+  #messages::-webkit-scrollbar { width: 4px; }
+  #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .msg-row { display: flex; gap: 8px; max-width: 78%; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-row.ai { align-self: flex-start; }
+
+  .msg-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0; margin-top: 4px;
+  }
+  .msg-row.ai .msg-avatar { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+  .msg-row.user .msg-avatar { background: var(--surface2); border: 1px solid var(--border); }
+
+  .bubble {
+    padding: 10px 14px; border-radius: 16px;
+    font-size: 14px; line-height: 1.65; word-break: break-word;
+  }
+  .msg-row.user .bubble { background: var(--user-bubble); border: 1px solid rgba(129,140,248,0.2); border-bottom-right-radius: 4px; }
+  .msg-row.ai .bubble { background: var(--ai-bubble); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+
+  .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .typing-indicator span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: bounce 1.2s infinite; opacity: 0.6; }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); opacity: 0.6; } 30% { transform: translateY(-5px); opacity: 1; } }
+
+  .personality-badge {
+    align-self: center; padding: 4px 12px;
+    background: rgba(192,132,252,0.07); border: 1px solid rgba(192,132,252,0.15);
+    border-radius: 20px; font-size: 11px; color: var(--accent);
+  }
+
+  /* WELCOME */
+  .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 10px; text-align: center; padding: 40px 20px; }
+  .welcome-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 0 40px var(--glow); margin-bottom: 4px; }
+  .welcome h2 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; }
+  .welcome p { font-size: 13px; color: var(--text-muted); max-width: 260px; line-height: 1.6; }
+  .suggestions { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; margin-top: 8px; max-width: 320px; }
+  .suggestion-chip { padding: 6px 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+  .suggestion-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(192,132,252,0.08); }
+
+  /* INPUT */
+  .input-area { padding: 12px 16px; background: rgba(13,13,15,0.9); backdrop-filter: blur(20px); border-top: 1px solid var(--border); }
+  .input-wrapper { display: flex; align-items: flex-end; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 8px 8px 8px 14px; transition: border-color 0.2s; }
+  .input-wrapper:focus-within { border-color: var(--accent); }
+  #user-input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; resize: none; max-height: 120px; min-height: 24px; line-height: 1.5; padding: 3px 0; }
+  #user-input::placeholder { color: var(--text-muted); }
+  #send-btn { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 15px; transition: opacity 0.2s, transform 0.1s; }
+  #send-btn:hover { opacity: 0.85; }
+  #send-btn:active { transform: scale(0.94); }
+  #send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 100%; max-width: 460px; max-height: 82dvh; overflow-y: auto; animation: slideUp 0.25s ease; }
+  @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal h2 { font-family: 'Syne', sans-serif; font-size: 17px; margin-bottom: 4px; }
+  .modal p.subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 18px; }
+  .modal label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .preset-card { padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.2s; text-align: left; }
+  .preset-card:hover, .preset-card.active { border-color: var(--accent); background: rgba(192,132,252,0.08); }
+  .preset-card.active { box-shadow: 0 0 0 1px var(--accent); }
+  .preset-card .preset-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .preset-card .preset-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+  .modal textarea { width: 100%; min-height: 110px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; resize: vertical; outline: none; transition: border-color 0.2s; margin-bottom: 16px; }
+  .modal textarea:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-cancel { padding: 8px 16px; background: transparent; border: 1px solid var(--border); border-radius: 9px; color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-apply { padding: 8px 18px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 9px; color: white; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+  .btn-apply:hover { opacity: 0.85; }
+
+  /* MOBILE */
+  @media (max-width: 640px) {
+    #sidebar { position: fixed; top: 0; left: 0; bottom: 0; transform: translateX(-100%); z-index: 50; box-shadow: 4px 0 24px rgba(0,0,0,0.4); }
+    #sidebar.open { transform: translateX(0); }
+    #btn-sidebar-toggle { display: flex !important; }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
+    .sidebar-backdrop.open { display: block; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand">
+      <div class="s-avatar">✨</div>
+      <span>Célia</span>
+    </div>
+    <button id="btn-new-chat" onclick="newChat()">✏️ Nova conversa</button>
+  </div>
+  <div class="sidebar-section-label">Conversas</div>
+  <div id="chat-list"></div>
+  <div class="sidebar-footer">
+    <button id="btn-personality-side" onclick="openModal()">🎭 Mudar personalidade</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <header>
+    <div class="header-left">
+      <button id="btn-sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      <div class="header-title" id="chat-title">Nova conversa</div>
+    </div>
+    <div class="personality-tag" id="personality-label">Assistente Padrão</div>
+  </header>
+
+  <div id="messages">
+    <div class="welcome" id="welcome-screen">
+      <div class="welcome-avatar">✨</div>
+      <h2>Olá! Eu sou a Célia</h2>
+      <p>Suas conversas ficam salvas automaticamente. Mude minha personalidade quando quiser!</p>
+      <div class="suggestions">
+        <div class="suggestion-chip" onclick="sendSuggestion('Me conta uma curiosidade incrível')">💡 Curiosidade</div>
+        <div class="suggestion-chip" onclick="sendSuggestion('Me ajuda a escrever um texto criativo')">✍️ Texto criativo</div>
+        <div class="suggestion-chip" onclick="sendSuggestion('Explica como funciona a IA')">🤖 Como funciona IA</div>
+        <div class="suggestion-chip" onclick="sendSuggestion('Me dá uma dica de produtividade')">⚡ Produtividade</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="user-input" placeholder="Mensagem para a Célia..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button id="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2>🎭 Personalidade da Célia</h2>
+    <p class="subtitle">Escolha um preset ou escreva a sua</p>
+    <label>Presets rápidos</label>
+    <div class="presets-grid">
+      <div class="preset-card active" data-name="Assistente Padrão" data-prompt="Você é Célia, uma assistente virtual inteligente, amigável e prestativa. Responda sempre em português brasileiro de forma clara e útil." onclick="selectPreset(this)">
+        <div class="preset-name">🤖 Padrão</div><div class="preset-desc">Inteligente e prestativa</div>
+      </div>
+      <div class="preset-card" data-name="Tsundere" data-prompt="Você é Célia, uma assistente com personalidade tsundere — dura por fora, doce por dentro. Use gírias brasileiras, fique envergonhada quando elogiada, mas sempre ajude. Responda em português." onclick="selectPreset(this)">
+        <div class="preset-name">😤 Tsundere</div><div class="preset-desc">Dura por fora, doce por dentro</div>
+      </div>
+      <div class="preset-card" data-name="Descontraída" data-prompt="Você é Célia, super descontraída, usa gírias, é engraçada e faz tudo com leveza. Responde rápido e sem frescura, igual uma amiga brasileira. Responda sempre em português." onclick="selectPreset(this)">
+        <div class="preset-name">😎 Descontraída</div><div class="preset-desc">Gírias, humor e sem frescura</div>
+      </div>
+      <div class="preset-card" data-name="Especialista" data-prompt="Você é Célia, uma especialista técnica extremamente precisa e detalhista. Responda com profundidade, use exemplos concretos e explique com clareza. Responda em português." onclick="selectPreset(this)">
+        <div class="preset-name">🔬 Especialista</div><div class="preset-desc">Técnica, precisa e detalhista</div>
+      </div>
+      <div class="preset-card" data-name="Motivacional" data-prompt="Você é Célia, uma coach motivacional energética e positiva. Incentive sempre, celebre cada conquista e ajude a pessoa a acreditar em si. Responda em português brasileiro com energia." onclick="selectPreset(this)">
+        <div class="preset-name">💪 Motivacional</div><div class="preset-desc">Energia e positividade</div>
+      </div>
+      <div class="preset-card" data-name="Filosófica" data-prompt="Você é Célia, uma assistente filosófica que adora questionar, refletir e explorar ideias profundas. Faça perguntas instigantes e explore múltiplas perspectivas. Responda em português." onclick="selectPreset(this)">
+        <div class="preset-name">🧠 Filosófica</div><div class="preset-desc">Reflexiva e questionadora</div>
+      </div>
+    </div>
+    <label>Personalidade personalizada</label>
+    <textarea id="custom-prompt" placeholder="Ex: Você é Célia, uma pirata do séc. 17 que fala de forma dramática..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-apply" onclick="applyPersonality()">Aplicar ✨</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentChatId = null;
+let currentPersonality = {
+  name: 'Assistente Padrão',
+  prompt: 'Você é Célia, uma assistente virtual inteligente, amigável e prestativa. Responda sempre em português brasileiro de forma clara e útil.'
+};
+let isLoading = false;
+
+const LS_CHATS = 'celia_chats';
+const LS_PERSONALITY = 'celia_personality';
+
+function loadChats() {
+  try { return JSON.parse(localStorage.getItem(LS_CHATS)) || {}; } catch { return {}; }
+}
+function saveChats(chats) { localStorage.setItem(LS_CHATS, JSON.stringify(chats)); }
+function loadPersonality() {
+  try { const p = JSON.parse(localStorage.getItem(LS_PERSONALITY)); if (p?.name && p?.prompt) return p; } catch {}
+  return null;
+}
+function savePersonality(p) { localStorage.setItem(LS_PERSONALITY, JSON.stringify(p)); }
+function generateId() { return 'chat_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+function getChat(id) { return loadChats()[id] || null; }
+function saveChat(id, data) { const c = loadChats(); c[id] = data; saveChats(c); }
+function deleteChat(id) { const c = loadChats(); delete c[id]; saveChats(c); }
+function getAllChats() { return Object.values(loadChats()).sort((a,b) => b.updatedAt - a.updatedAt); }
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function newChat() {
+  currentChatId = generateId();
+  saveChat(currentChatId, { id: currentChatId, title: 'Nova conversa', messages: [], personality: {...currentPersonality}, createdAt: Date.now(), updatedAt: Date.now() });
+  renderMessages([]);
+  renderChatList();
+  document.getElementById('chat-title').textContent = 'Nova conversa';
+  document.getElementById('user-input').focus();
+  closeSidebar();
+}
+
+function loadChat(id) {
+  const chat = getChat(id);
+  if (!chat) return;
+  currentChatId = id;
+  currentPersonality = chat.personality || currentPersonality;
+  document.getElementById('personality-label').textContent = currentPersonality.name;
+  document.getElementById('chat-title').textContent = chat.title;
+  renderMessages(chat.messages);
+  renderChatList();
+  closeSidebar();
+}
+
+function renderMessages(messages) {
+  const div = document.getElementById('messages');
+  div.innerHTML = '';
+  if (!messages || messages.length === 0) {
+    div.innerHTML = `<div class="welcome" id="welcome-screen">
+      <div class="welcome-avatar">✨</div>
+      <h2>Olá! Eu sou a Célia</h2>
+      <p>Suas conversas ficam salvas automaticamente. Mude minha personalidade quando quiser!</p>
+      <div class="suggestions">
+        <div class="suggestion-chip" onclick="sendSuggestion('Me conta uma curiosidade incrível')">💡 Curiosidade</div>
+        <div class="suggestion-chip" onclick="sendSuggestion('Me ajuda a escrever um texto criativo')">✍️ Texto criativo</div>
+        <div class="suggestion-chip" onclick="sendSuggestion('Explica como funciona a IA')">🤖 Como funciona IA</div>
+        <div class="suggestion-chip" onclick="sendSuggestion('Me dá uma dica de produtividade')">⚡ Produtividade</div>
+      </div></div>`;
+    return;
+  }
+  messages.forEach(m => {
+    const row = document.createElement('div');
+    row.className = `msg-row ${m.role === 'user' ? 'user' : 'ai'}`;
+    row.innerHTML = `<div class="msg-avatar">${m.role === 'user' ? '👤' : '✨'}</div><div class="bubble">${m.content.replace(/\n/g,'<br>')}</div>`;
+    div.appendChild(row);
+  });
+  div.scrollTop = div.scrollHeight;
+}
+
+function renderChatList() {
+  const list = document.getElementById('chat-list');
+  const chats = getAllChats();
+  if (chats.length === 0) { list.innerHTML = `<div style="padding:12px 10px;font-size:12px;color:var(--text-muted);text-align:center">Nenhuma conversa ainda</div>`; return; }
+  list.innerHTML = chats.map(chat => {
+    const isActive = chat.id === currentChatId;
+    const date = new Date(chat.updatedAt).toLocaleDateString('pt-BR', {day:'2-digit',month:'short'});
+    return `<div class="chat-item ${isActive?'active':''}" onclick="loadChat('${chat.id}')">
+      <div class="chat-item-icon">💬</div>
+      <div class="chat-item-info">
+        <div class="chat-item-title">${escapeHtml(chat.title)}</div>
+        <div class="chat-item-meta">${date} · ${escapeHtml(chat.personality?.name||'Padrão')}</div>
+      </div>
+      <button class="chat-item-del" onclick="event.stopPropagation();removeChatItem('${chat.id}')" title="Deletar">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function removeChatItem(id) {
+  deleteChat(id);
+  if (currentChatId === id) newChat(); else renderChatList();
+}
+
+function addMessageToUI(role, text) {
+  const welcome = document.getElementById('welcome-screen');
+  if (welcome) welcome.remove();
+  const div = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = `msg-row ${role === 'user' ? 'user' : 'ai'}`;
+  row.innerHTML = `<div class="msg-avatar">${role === 'user' ? '👤' : '✨'}</div><div class="bubble">${text.replace(/\n/g,'<br>')}</div>`;
+  div.appendChild(row);
+  div.scrollTop = div.scrollHeight;
+}
+
+function showTyping() {
+  const welcome = document.getElementById('welcome-screen');
+  if (welcome) welcome.remove();
+  const div = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row ai'; row.id = 'typing-indicator';
+  row.innerHTML = `<div class="msg-avatar">✨</div><div class="bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  div.appendChild(row); div.scrollTop = div.scrollHeight;
+}
+
+function removeTyping() { const t = document.getElementById('typing-indicator'); if (t) t.remove(); }
+
+async function sendMessage(overrideText) {
+  if (isLoading) return;
+  const input = document.getElementById('user-input');
+  const text = overrideText || input.value.trim();
+  if (!text) return;
+  input.value = ''; input.style.height = 'auto';
+  if (!currentChatId) newChat();
+  const chat = getChat(currentChatId);
+  if (!chat) return;
+  chat.messages.push({ role: 'user', content: text });
+  if (chat.title === 'Nova conversa' && chat.messages.length === 1) {
+    chat.title = text.slice(0, 40) + (text.length > 40 ? '…' : '');
+    document.getElementById('chat-title').textContent = chat.title;
+  }
+  chat.updatedAt = Date.now();
+  saveChat(currentChatId, chat);
+  addMessageToUI('user', text);
+  renderChatList();
+  isLoading = true;
+  document.getElementById('send-btn').disabled = true;
+  showTyping();
+  try {
+    const messages = chat.messages.map(m => ({ role: m.role, content: m.content }));
+    const response = await puter.ai.chat(messages, { model: 'x-ai/grok-4-1-fast', system: currentPersonality.prompt });
+    removeTyping();
+    const reply = response?.message?.content || 'Não consegui responder. Tenta de novo!';
+    const updatedChat = getChat(currentChatId);
+    updatedChat.messages.push({ role: 'assistant', content: reply });
+    updatedChat.updatedAt = Date.now();
+    saveChat(currentChatId, updatedChat);
+    addMessageToUI('ai', reply);
+    renderChatList();
+  } catch (err) {
+    removeTyping();
+    addMessageToUI('ai', `Ops! Algo deu errado 😅\n\nErro: ${err.message}`);
+  }
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+function sendSuggestion(text) { sendMessage(text); }
+
+function openModal() { document.getElementById('modal-overlay').classList.add('open'); document.getElementById('custom-prompt').value = ''; }
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+function selectPreset(card) {
+  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  document.getElementById('custom-prompt').value = '';
+}
+
+function applyPersonality() {
+  const customPrompt = document.getElementById('custom-prompt').value.trim();
+  const activePreset = document.querySelector('.preset-card.active');
+  let name, prompt;
+  if (customPrompt) { name = 'Personalizada'; prompt = customPrompt; }
+  else if (activePreset) { name = activePreset.dataset.name; prompt = activePreset.dataset.prompt; }
+  else return;
+  currentPersonality = { name, prompt };
+  document.getElementById('personality-label').textContent = name;
+  savePersonality(currentPersonality);
+  if (currentChatId) { const chat = getChat(currentChatId); if (chat) { chat.personality = {...currentPersonality}; saveChat(currentChatId, chat); } }
+  const div = document.getElementById('messages');
+  const welcome = document.getElementById('welcome-screen');
+  if (welcome) welcome.remove();
+  const badge = document.createElement('div');
+  badge.className = 'personality-badge';
+  badge.textContent = `🎭 Personalidade: ${name}`;
+  div.appendChild(badge); div.scrollTop = div.scrollHeight;
+  closeModal();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-backdrop').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('open');
+}
+
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+
+// INIT
+(function init() {
+  const savedP = loadPersonality();
+  if (savedP) { currentPersonality = savedP; document.getElementById('personality-label').textContent = currentPersonality.name; }
+  renderChatList();
+  const chats = getAllChats();
+  if (chats.length > 0) loadChat(chats[0].id); else newChat();
+})();
+</script>
+</body>
+</html>
